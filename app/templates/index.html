@@ -1,0 +1,96 @@
+<!-- app/templates/index.html -->
+<!---this file made by AI (im backend engineer only so i dont know make a frontend)--->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZA0 Live Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0b0c10; }
+    </style>
+</head>
+<body class="text-gray-200 font-sans min-h-screen flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="border-b border-gray-800 bg-[#1f2833]/20 backdrop-blur-md py-5 px-8">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-wider text-white flex items-center gap-2">
+                <span class="h-3 w-3 rounded-full bg-green-500 animate-pulse"></span>
+                ZA0 <span class="text-gray-500 text-sm font-normal">| Live Engine Monitor</span>
+            </h1>
+            <div id="status" class="text-xs bg-red-950 text-red-400 px-3 py-1 rounded-full border border-red-800">
+                Disconnected
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto w-full p-8 flex-grow grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+        
+        <!-- Card 1: Active Connections -->
+        <div class="bg-[#151a22] border border-gray-800 rounded-xl p-6 shadow-xl transition-all hover:border-gray-750">
+            <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Active Connections</p>
+            <p id="active-connections" class="text-5xl font-extrabold text-white mt-4 font-mono">0</p>
+        </div>
+
+        <!-- Card 2: Total Requests -->
+        <div class="bg-[#151a22] border border-gray-800 rounded-xl p-6 shadow-xl transition-all hover:border-gray-750">
+            <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Total Requests Received</p>
+            <p id="total-requests" class="text-5xl font-extrabold text-white mt-4 font-mono">0</p>
+        </div>
+
+        <!-- Card 3: Avg Latency -->
+        <div class="bg-[#151a22] border border-gray-800 rounded-xl p-6 shadow-xl transition-all hover:border-gray-750">
+            <p class="text-sm font-medium text-gray-400 uppercase tracking-wider">Average Latency</p>
+            <div class="flex items-baseline gap-2 mt-4">
+                <p id="avg-latency" class="text-5xl font-extrabold text-white font-mono">0.00</p>
+                <span class="text-gray-500 font-medium">ms</span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-6 text-xs text-gray-600 border-t border-gray-950">
+        FastAPI + Redis + WebSocket Real-Time Monitoring System
+    </footer>
+
+    <!-- WebSocket Logic -->
+    <script>
+        const statusEl = document.getElementById('status');
+        const activeConnEl = document.getElementById('active-connections');
+        const totalReqEl = document.getElementById('total-requests');
+        const avgLatencyEl = document.getElementById('avg-latency');
+
+        // إنشاء اتصال الـ WebSocket الديناميكي بناءً على الـ Host الحالي
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const wsUrl = wsProtocol + window.location.host + '/ws/monitor';
+        
+        function connect() {
+            const ws = new WebSocket(wsUrl);
+            ws.onopen = () => {
+                statusEl.innerText = 'Live Streaming';
+                statusEl.className = 'text-xs bg-green-950 text-green-400 px-3 py-1 rounded-full border border-green-800';
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                activeConnEl.innerText = data.active_connections;
+                totalReqEl.innerText = data.total_requests;
+                avgLatencyEl.innerText = data.average_latency;
+            };
+
+            ws.onclose = () => {
+                statusEl.innerText = 'Disconnected - Retrying...';
+                statusEl.className = 'text-xs bg-red-950 text-red-400 px-3 py-1 rounded-full border border-red-800';
+                // إعادة الاتصال التلقائي بعد ثانيتين في حال انقطع
+                setTimeout(connect, 2000);
+            };
+        }
+
+        connect();
+    </script>
+</body>
+</html>
