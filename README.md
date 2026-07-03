@@ -1,3 +1,4 @@
+[dashboard.webm](https://github.com/user-attachments/assets/9f378a3e-3b66-44ff-a350-58a76c4d80b5)
 # ZA0 Live Monitor
 
 A real-time monitoring dashboard built with FastAPI, Redis, PostgreSQL, and WebSockets. This project tracks active connections, request counts, and request latency metrics in real time. It also persists periodic metric snapshots to PostgreSQL.
