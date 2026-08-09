@@ -8,6 +8,8 @@ from pathlib import Path
 import json
 import asyncio
 from fastapi.middleware.cors import CORSMiddleware
+from chronexis import Chronexis
+
 
 
 @asynccontextmanager
@@ -100,6 +102,18 @@ async def fast_task():
 async def slow_task():
     await asyncio.sleep(0.3)
     return {"status":"success", "type":"slow"}
+
+@app.get("/api/v1/latency-report")
+async def latency_report():
+    latencies = await redis_client.lrange("request_times", 0, -1)
+    values = [float(latency) for latency in latencies]
+    slow = [value for value in values if value > 1000]
+    worst = max(slow)
+    return {
+        "worst_ms": round(worst, 2),
+        "slow_count": len(slow),
+        "sampled": len(values),
+    }
 
 @app.get("/", response_class=HTMLResponse)
 async def get_dashboard():

@@ -5,3 +5,6 @@ sqlalchemy>=2.0.0
 asyncpg>=0.29.0
 pydantic-settings>=2.2.0
 httpx>=0.25.0
+# Tagged release tarball rather than git+https: python:3.11-slim has no git,
+# and pip shells out to it for git+ URLs. Plain HTTPS needs nothing extra.
+chronexis @ https://github.com/Alraies97/chronexis-python/archive/refs/tags/v0.2.0.tar.gz
