@@ -14,6 +14,7 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379/0
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres_password@db:5432/monitor_db
+      - CHRONEXIS_API_KEY=${CHRONEXIS_API_KEY}
     depends_on:
       - redis
       - db

@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from .middleware import RealTimeMonitorMiddleware
 from fastapi.responses import HTMLResponse
@@ -8,7 +9,8 @@ from pathlib import Path
 import json
 import asyncio
 from fastapi.middleware.cors import CORSMiddleware
-from chronexis import Chronexis
+import chronexis
+import os
 
 
 
@@ -26,7 +28,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="ZA0 Live-Monitor", lifespan=lifespan)
 
-
+chronexis.install(
+    app,
+    api_key=os.environ["CHRONEXIS_API_KEY"],
+    endpoint="https://chronexis.dedyn.io/v1/traces",
+    on_drop=lambda reason, payload: print(f"[chronexis] DROPPED: {reason}"),
+)
 
 app.add_middleware(
     CORSMiddleware,
