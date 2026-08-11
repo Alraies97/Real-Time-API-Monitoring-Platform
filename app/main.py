@@ -122,6 +122,17 @@ async def latency_report():
         "sampled": len(values),
     }
 
+@app.get("/api/v1/connections/ratio")
+async def connections_ratio():
+    active_connections = await redis_client.get("active_connections") or "0"
+    total_requests = await redis_client.get("total_requests") or "0"
+    ratio = int(active_connections) / int(total_requests)
+    return {
+        "active": int(active_connections),
+        "total": int(total_requests),
+        "ratio_pct": round(ratio * 100, 2),
+    }
+
 @app.get("/", response_class=HTMLResponse)
 async def get_dashboard():
     template_path = Path(__file__).resolve().parent / "templates" / "index.html"
