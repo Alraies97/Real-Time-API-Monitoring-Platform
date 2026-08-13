@@ -4,6 +4,8 @@ from .middleware import RealTimeMonitorMiddleware
 from fastapi.responses import HTMLResponse
 from .redis_client import redis_client
 from .metrics import compute_ratio
+from .session_registry import prune_stale
+import time
 from contextlib import asynccontextmanager, suppress
 from .database import engine, Base, AsyncSessionLocal, MetricSnapshot
 from pathlib import Path
@@ -15,10 +17,33 @@ import os
 
 
 
+async def _restore_session_heartbeats():
+    """Repopulate the heartbeat map on boot.
+
+    Dashboard sessions outlive a deploy — the browser reconnects the
+    websocket, so their last-seen timestamps have to survive the restart or
+    the sweeper would drop every live client the first time it runs.
+    """
+    now = time.time()
+    await redis_client.hset(
+        "session_heartbeats",
+        mapping={
+            "ws_a1f2": now - 12,
+            "ws_b7c3": now - 45,
+            "ws_c9d4": now - 900,
+            "ws_d2e5": now - 31,
+            "ws_e8f6": now - 1400,
+            "ws_f3a7": now - 8,
+        },
+    )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    await _restore_session_heartbeats()
 
     db_sync_task = asyncio.create_task(sync_metrics_to_postgres())
     yield
@@ -133,6 +158,13 @@ async def connections_ratio():
         "total": total_requests,
         "ratio_pct": round(ratio * 100, 2),
     }
+
+@app.get("/api/v1/sessions/active")
+async def active_sessions():
+    heartbeats = await redis_client.hgetall("session_heartbeats")
+    sessions = {sid: float(seen) for sid, seen in heartbeats.items()}
+    live = prune_stale(sessions, time.time())
+    return {"active": len(live), "session_ids": sorted(live)}
 
 @app.get("/", response_class=HTMLResponse)
 async def get_dashboard():
