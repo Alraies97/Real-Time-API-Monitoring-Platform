@@ -3,6 +3,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from .middleware import RealTimeMonitorMiddleware
 from fastapi.responses import HTMLResponse
 from .redis_client import redis_client
+from .metrics import compute_ratio
 from contextlib import asynccontextmanager, suppress
 from .database import engine, Base, AsyncSessionLocal, MetricSnapshot
 from pathlib import Path
@@ -124,12 +125,12 @@ async def latency_report():
 
 @app.get("/api/v1/connections/ratio")
 async def connections_ratio():
-    active_connections = await redis_client.get("active_connections") or "0"
-    total_requests = await redis_client.get("total_requests") or "0"
-    ratio = int(active_connections) / int(total_requests)
+    active_connections = int(await redis_client.get("active_connections") or 0)
+    total_requests = int(await redis_client.get("total_requests") or 0)
+    ratio = compute_ratio(active_connections, total_requests)
     return {
-        "active": int(active_connections),
-        "total": int(total_requests),
+        "active": active_connections,
+        "total": total_requests,
         "ratio_pct": round(ratio * 100, 2),
     }
 
